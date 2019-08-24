@@ -15,10 +15,6 @@ public class RootResource {
   @GET
   @Produces(MediaType.TEXT_HTML)
   public String message() {
-    var sentimentAnalyzer = new Analyzer();
-    sentimentAnalyzer.initialize();
-    SentimentResult res = sentimentAnalyzer.getSentimentResult("Excellent, this will be so useful.");
-
-    return res.getResultString();
+    return "Sentiment Analyzer. Go to /twitter/<user> or /twitter/id/<id>";
   }
 }
