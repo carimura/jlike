@@ -27,7 +27,7 @@ mvn package
 ## Run
 
 ```
-java -jar target/jlike.jar
+java --enable-preview -jar target/jlike.jar
 
 --> http://localhost:8080/
 --> http://localhost:8080/twitter/<username>

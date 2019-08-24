@@ -11,40 +11,61 @@ import twitter4j.*;
 import twitter4j.conf.ConfigurationBuilder;
 
 import java.util.ArrayList;
-import java.util.List;
 
 @Path("/twitter/{user}")
 @RequestScoped
 public class TwitterResource {
-  @PathParam("user") String user;
+  @PathParam("user")
+  String user;
 
   @GET
   @Produces(MediaType.TEXT_HTML)
   public String output() throws Exception {
-    var resp = "<html><header></header><body>";
-
-    resp += analyzeTweets(user);
-    resp += "</body></html>";
-    return resp;
+    return """
+    <!DOCTYPE html>
+    <html>
+    <header>
+      <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css" integrity="sha384-ggOyR0iXCbMQv3Xipma34MD+dH/1fQ784/j6cY/iJTQUOhcWr7x9JvoRxT2MZw1T" crossorigin="anonymous">
+      <style>
+        html { margin: 20px; }
+        h2 { font-size: 1.5rem; }
+        a { text-decoration: underline; }
+        hr { border-top: 1px solid rgba(0,0,0,.4) }
+        </style>
+      </header>
+      <body>
+        %s
+      </body>
+    </html>
+    """.formatted(analyzeTweets(user));
   }
 
 
-  static String analyzeTweets(String user) throws Exception {
+  private static String analyzeTweets(String user) throws Exception {
     var twitter = setupTwitter();
     var sentimentAnalyzer = new Analyzer();
     sentimentAnalyzer.initialize();
-    var resp = "<h1>Sentiment of @" + user + " Tweets</h2><br />";
+    var resp = "<h1>Analysis of @" + user + " Tweets</h1><br />";
 
-    ResponseList<Status> tweets = twitter.getUserTimeline(user, new Paging(1, 30));
+    ResponseList<Status> tweets = twitter.getUserTimeline(user, new Paging(1, 20));
+//    Status temp = twitter.showStatus(Long.parseLong("1148226127384604673"));
+//    var tweets = new ArrayList<Status>();
+//    tweets.add(temp);
     System.out.println("found " + tweets.size() + " tweets for user " + user);
 
     // FOR EACH TWEET
     for (Status tweet : tweets) {
       Status t = twitter.showStatus(tweet.getId());
-      //var embedReq = new OEmbedRequest(tweetId, "https://twitter.com/chadarimura/status/1158420985915117579");
-      //var embed = twitter.getOEmbed(embedReq);
-      //resp += embed.getHtml();
-      resp += "<h2>" + t.getText() + "</h2>";
+
+      var embedReq = new OEmbedRequest(t.getId(), "https://twitter.com/"+user+"/status/"+t.getId());
+      embedReq.setMaxWidth(500);
+      var embed = twitter.getOEmbed(embedReq);
+      resp += embed.getHtml();
+
+      resp += """
+      Retweets: <b>%s</b> <br />
+      Likes: <b>%s</b> <br />
+      """.formatted(t.getRetweetCount(), t.getFavoriteCount());
 
       // Get all mentions of user since the tweet in question
       var q = new Query("to:@" + user);
@@ -55,30 +76,43 @@ public class TwitterResource {
 
       var sentiments = new ArrayList<SentimentResult>();
       SentimentResult res;
+      var delayedResp = "";
 
-      // TRYING TO GET ALL REPLIES TO TWEET AND RUN ANALYSIS
+      // ALL MENTIONS OF THE OUTER TWEET
       for (Status status : statuses) {
         if (status.getInReplyToStatusId() != tweet.getId()) {
           continue;
         }
         res = sentimentAnalyzer.getSentimentResult(status.getText());
         sentiments.add(res);
-        resp += "<p style=\"font-size: 11px;\"><br />mention: @" + status.getUser().getScreenName() + " - " + status.getText() + "<br />";
-        resp += res.getResultString();
+        delayedResp += """
+        <p style="font-size: 11px;"><br />
+        @%s - %s<br />
+        %s
+        </p>
+        """.formatted(status.getUser().getScreenName(), status.getText(), res.getResultString());
       }
+
       System.out.println("Found " + sentiments.size() + " sentiments");
+
       var sum = 0.0;
       for (SentimentResult r : sentiments) {
         sum += r.getSentimentScore();
       }
       var avg = sum / sentiments.size();
       if (sentiments.size() > 0) {
-        resp += "Based on " + sentiments.size() + " replies, the average sentiment out of 4 is " + String.format("%.2f",avg);
+        resp += """
+        Replies: <b>%s</b><br />
+        Average Sentiment: <b>%s</b> <font style="font-size: 10px;">(out of 4)</font>"<br />
+        Sentiment Analysis: <b>%s</b>
+        """.formatted(sentiments.size(), String.format("%.2f", avg), SentimentResult.getFinalSentimentHTML(avg));
       } else {
         resp += "Not enough data to calculate sentiment.";
       }
 
-      resp += "<br /><br /><hr />";
+      resp += """
+      <br />%s<br /><hr />
+      """.formatted(delayedResp);
     }
 
     return resp;
