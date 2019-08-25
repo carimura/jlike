@@ -1,7 +1,5 @@
 package com.pinealpha.demos.jlike;
 
-import twitter4j.Status;
-
 public class SentimentResult {
   double sentimentScore;
   String sentimentType;

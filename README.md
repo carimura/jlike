@@ -6,7 +6,8 @@ Test with: `1158420985915117579`
 
 TODO:
 
-- clean up UI
+- get rid of old twitter code
+- dates are hardcoded. need to fix that.
 - add Fibers
 - add jlink and Docker?
 - sentiments seem low...
@@ -24,7 +25,12 @@ TODO:
 mvn package
 ```
 
+## Setup
+
+`System.getenv("TWITTER_BEARER")`
+
 ## Run
+
 
 ```
 java --enable-preview -jar target/jlike.jar
