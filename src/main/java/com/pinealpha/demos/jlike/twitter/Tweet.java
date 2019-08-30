@@ -13,7 +13,6 @@ public class Tweet {
 
   public String getUrl() {
     var url = "https://twitter.com/" + user.screen_name + "/status/" + id;
-    System.out.println(url);
     return url;
   }
 }

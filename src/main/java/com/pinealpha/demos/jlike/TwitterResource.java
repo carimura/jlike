@@ -9,6 +9,8 @@ import javax.ws.rs.PathParam;
 import javax.ws.rs.Produces;
 import javax.ws.rs.core.MediaType;
 
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 
 @Path("/twitter")
@@ -64,30 +66,42 @@ public class TwitterResource {
       tweets.add(temp);
       resp += "<h1>Analysis of Tweet " + obj + "</h1><br />";
     } else {
-      Tweet[] arrayOfTweets = TwitterService.getTimeline(obj, "10");
+      var arrayOfTweets = TwitterService.getTimeline(obj, "25", "false");
       for (Tweet tweet : arrayOfTweets) {
         tweets.add(tweet);
       }
       resp += "<h1>Analysis of @" + obj + " Tweets</h1><br />";
     }
 
-    // Get all tweets sent TO this user, for analysis in a bit.
-    Tweet[] replies = TwitterService.search(
-        "to:" + tweets.get(0).user.screen_name + " lang:en",
-        "100",
-        "201908010100",
-        "201908241000"
-    );
+    var format = DateTimeFormatter.ofPattern("yyyyMMdd0000");
+    var fromDate = LocalDateTime.now().minusDays(30).format(format);
+    var toDate = LocalDateTime.now().format(format);
+    var query = "to:" + tweets.get(0).user.screen_name + " lang:en";
 
-    // FOR EACH TWEET
+    // Get all tweets sent TO this user, for analysis in a bit.
+    Tweet[] replies = TwitterService.search(query, "100", fromDate, toDate);
+
+    resp += "<table style='border-spacing: 10px 20px; border-collapse: separate;'>";
+
+    int totalRetweets = tweets.stream().mapToInt(t -> t.retweet_count).sum();
+    int totalLikes = tweets.stream().mapToInt(t -> t.favorite_count).sum();
+    int avgRetweets = totalRetweets / tweets.size();
+    int avgLikes = totalLikes / tweets.size();
+
+    // Now process each Tweet
     for (Tweet t : tweets) {
-      Oembed oembed = TwitterService.getTweetEmbed(t.getUrl(), "500");
-      resp += oembed.html;
+      Oembed oembed = TwitterService.getTweetEmbed(t.getUrl(), "400");
+
+      String retweetAnalysis = getAnalysis(t.retweet_count, avgRetweets);
+      String likeAnalysis = getAnalysis(t.favorite_count, avgLikes);
 
       resp += """
-      Retweets: <b>%s</b> <br />
-      Likes: <b>%s</b> <br />
-      """.formatted(t.retweet_count, t.favorite_count);
+      <tr>
+      <td>%s</td>
+      <td style="vertical-align: top; padding-top: 15px;">
+      Retweets: <b>%s</b> (%s)<br />
+      Likes: <b>%s</b> (%s)<br />
+      """.formatted(oembed.html, t.retweet_count, retweetAnalysis, t.favorite_count, likeAnalysis);
 
       var sentiments = new ArrayList<SentimentResult>();
       SentimentResult res;
@@ -95,7 +109,11 @@ public class TwitterResource {
 
       // Iterate across all replies to outer tweet
       for (Tweet reply : replies) {
-        // Skip if isn't a reply to our parent tweet. what a joke of an API.
+
+        // Skip if it's not a reply or isn't reply to parent. what a stupid API.
+        if (reply.in_reply_to_status_id == null) {
+          continue;
+        }
         if (reply.in_reply_to_status_id.equals(t.id)) {
           res = sentimentAnalyzer.getSentimentResult(reply.text);
           sentiments.add(res);
@@ -109,30 +127,49 @@ public class TwitterResource {
         }
       }
 
-      System.out.println("Found " + sentiments.size() + " sentiments");
-
       var sum = 0.0;
       for (SentimentResult r : sentiments) {
         sum += r.getSentimentScore();
       }
       var avg = sum / sentiments.size();
       if (sentiments.size() > 0) {
+
         resp += """
-        Replies: <b>%s</b><br />
-        Average Sentiment: <b>%s</b> <font style="font-size: 10px;">(out of 4)</font>"<br />
-        Sentiment Analysis: <b>%s</b>
-        """.formatted(sentiments.size(), String.format("%.2f", avg), SentimentResult.getFinalSentimentHTML(avg));
+                Replies: <b>%s</b> <br />
+                Average Sentiment: <b>%s</b> <font style="font-size: 10px;">(out of 4)</font>"<br />
+                Sentiment Analysis: <b>%s</b>
+                """.formatted(sentiments.size(),
+            String.format("%.2f", avg),
+            SentimentResult.getFinalSentimentHTML(avg));
       } else {
-        resp += "Not enough data to calculate sentiment.";
+        resp += "No replies to calculate sentiment.";
       }
 
       resp += """
-      <br />%s<br /><hr />
+      <br />
+      %s</td></tr>
       """.formatted(delayedResp);
     }
 
     return resp;
   }
+
+
+  private static String getAnalysis(int current, int avg) {
+    String analysis;
+    double delta;
+    if (current > avg) {
+      delta = (double)(current - avg) / current * 100;
+      analysis = "<font style=\"color: darkgreen;\">more than average by <b>" + (int)Math.round(delta) + "%</b></font>";
+    } else if (current < avg) {
+      delta = (double)(avg - current) / current * 100;
+      analysis = "<font style=\"color: darkred;\">less than average by " + (int)Math.round(delta) + "%</b></font>";
+    } else {
+      analysis = "same as average";
+    }
+    return analysis;
+  }
+
 
 }
 

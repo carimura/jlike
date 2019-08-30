@@ -6,6 +6,8 @@ import okhttp3.OkHttpClient;
 import okhttp3.Request;
 import okhttp3.Response;
 
+import java.io.IOException;
+
 public class TwitterService {
   public static Tweet[] search(String query, String maxResults, String fromDate, String toDate) throws Exception {
     HttpUrl.Builder builder = HttpUrl.parse("https://api.twitter.com/1.1/tweets/search/30day/dev.json").newBuilder();
@@ -41,10 +43,11 @@ public class TwitterService {
     return oembed;
   }
 
-  public static Tweet[] getTimeline(String user, String count) throws Exception {
+  public static Tweet[] getTimeline(String user, String count, String include_rts) throws Exception {
     HttpUrl.Builder builder = HttpUrl.parse("https://api.twitter.com/1.1/statuses/user_timeline.json").newBuilder();
     builder.addQueryParameter("screen_name", user);
-    builder.addQueryParameter("screen_name", count);
+    builder.addQueryParameter("count", count);
+    builder.addQueryParameter("include_rts", include_rts);
     var respString = makeRequest(builder);
     ObjectMapper mapper = new ObjectMapper();
     Tweet[] tweets = mapper.readValue(respString, Tweet[].class);
@@ -61,16 +64,14 @@ public class TwitterService {
         .addHeader("content-type", "application/json")
         .build();
 
-    Response res = client.newCall(request).execute();
-    var respString = res.body().string();
-
-    res.close();
-    client.dispatcher().executorService().shutdown();
-    client.connectionPool().evictAll();
-
-    //System.out.println(respString);
-
-    return respString;
+    try (var res = client.newCall(request).execute()) {
+      if (!res.isSuccessful()) throw new IOException("\nUnexpected response: " + res + "\nBody: " + res.body().string());
+      var respString = res.body().string();
+      res.close();
+      client.dispatcher().executorService().shutdown();
+      client.connectionPool().evictAll();
+      return respString;
+    }
   }
 
 

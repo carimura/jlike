@@ -6,12 +6,12 @@ Test with: `1158420985915117579`
 
 TODO:
 
-- get rid of old twitter code
-- dates are hardcoded. need to fix that.
+- simple html template would be great
+- create bearer token if doesn't exist
+- Influencer score of retweeters 
 - add Fibers
 - add jlink and Docker?
 - sentiments seem low...
-- show details of individual score and why it was scored that way.
 - train model -- feed info back to model.
 - to include models or not to include them, probably not. too big. maybe
   download at Docker build time and utilize its caching
@@ -27,7 +27,13 @@ mvn package
 
 ## Setup
 
-`System.getenv("TWITTER_BEARER")`
+```
+❯ curl -u "$TWITTER_CONS_KEY:$TWITTER_CONS_SECRET" \
+  --data 'grant_type=client_credentials' \
+  'https://api.twitter.com/oauth2/token'
+
+❯ export TWITTER_BEARER=<result from above>
+```
 
 ## Run
 
