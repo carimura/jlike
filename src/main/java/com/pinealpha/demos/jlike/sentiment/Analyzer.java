@@ -1,4 +1,4 @@
-package com.pinealpha.demos.jlike;
+package com.pinealpha.demos.jlike.sentiment;
 
 import java.util.Properties;
 

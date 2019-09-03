@@ -189,6 +189,7 @@
     <orderEntry type="library" name="Maven: jakarta.json:jakarta.json-api:1.1.5" level="project" />
     <orderEntry type="library" scope="RUNTIME" name="Maven: org.jboss:jandex:2.1.1.Final" level="project" />
     <orderEntry type="library" scope="RUNTIME" name="Maven: javax.activation:javax.activation-api:1.2.0" level="project" />
+    <orderEntry type="library" name="Maven: javax.mvc:javax.mvc-api:1.0-pfd" level="project" />
     <orderEntry type="library" scope="TEST" name="Maven: org.junit.jupiter:junit-jupiter-api:5.0.1" level="project" />
     <orderEntry type="library" scope="TEST" name="Maven: org.opentest4j:opentest4j:1.0.0" level="project" />
     <orderEntry type="library" scope="TEST" name="Maven: org.junit.platform:junit-platform-commons:1.0.1" level="project" />

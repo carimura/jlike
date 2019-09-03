@@ -1,5 +1,6 @@
 package com.pinealpha.demos.jlike;
 
+import com.pinealpha.demos.jlike.sentiment.*;
 import com.pinealpha.demos.jlike.twitter.*;
 
 import javax.enterprise.context.RequestScoped;
