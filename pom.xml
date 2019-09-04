@@ -230,9 +230,9 @@
       <scope>runtime</scope>
     </dependency>
     <dependency>
-      <groupId>javax.mvc</groupId>
-      <artifactId>javax.mvc-api</artifactId>
-      <version>1.0-pfd</version>
+      <groupId>com.hubspot.jinjava</groupId>
+      <artifactId>jinjava</artifactId>
+      <version>2.5.2</version>
     </dependency>
     <dependency>
       <groupId>org.junit.jupiter</groupId>

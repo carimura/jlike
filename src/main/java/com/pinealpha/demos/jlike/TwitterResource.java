@@ -1,5 +1,9 @@
 package com.pinealpha.demos.jlike;
 
+import com.google.common.base.Charsets;
+import com.google.common.collect.Maps;
+import com.google.common.io.Resources;
+import com.hubspot.jinjava.Jinjava;
 import com.pinealpha.demos.jlike.sentiment.*;
 import com.pinealpha.demos.jlike.twitter.*;
 
@@ -13,36 +17,25 @@ import javax.ws.rs.core.MediaType;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
+import java.util.Map;
 
 @Path("/twitter")
 @RequestScoped
 public class TwitterResource {
 
-  private static final String TEMPLATE =
-      """
-      <!DOCTYPE html>
-      <html>
-      <header>
-        <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css" integrity="sha384-ggOyR0iXCbMQv3Xipma34MD+dH/1fQ784/j6cY/iJTQUOhcWr7x9JvoRxT2MZw1T" crossorigin="anonymous">
-        <style>
-          html { margin: 20px; }
-          h2 { font-size: 1.5rem; }
-          a { text-decoration: underline; }
-          hr { border-top: 1px solid rgba(0,0,0,.4) }
-          </style>
-        </header>
-        <body>
-          %s
-        </body>
-      </html>
-      """;
+  Jinjava JJ = new Jinjava();
+
+  public Map<String, Object> getContext() {
+    Map<String, Object> context = Maps.newHashMap();
+    return context;
+  }
 
   @Path("/id/{id}")
   @GET
   @Produces(MediaType.TEXT_HTML)
   public String processFromId(@PathParam("id") String id) throws Exception {
     System.out.println("----- ProcessFromId " + id + " -------");
-    return TEMPLATE.formatted(analyzeTweets("ID", id));
+    return "";
   }
 
   @Path("/{user}")
@@ -50,7 +43,15 @@ public class TwitterResource {
   @Produces(MediaType.TEXT_HTML)
   public String processFromUser(@PathParam("user") String user) throws Exception {
     System.out.println("----- ProcessFromUser " + user + " -------");
-    return TEMPLATE.formatted(analyzeTweets("USER", user));
+
+    var context = getContext();
+    context.put("content", analyzeTweets("USER", user));
+
+    String template = Resources.toString(Resources.getResource("twitter.html"), Charsets.UTF_8);
+
+    String page = JJ.render(template, context);
+
+    return page;
   }
 
 
